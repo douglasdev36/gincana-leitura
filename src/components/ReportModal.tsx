@@ -1,0 +1,193 @@
+import { useState } from 'react';
+import { X, FileText, Download } from 'lucide-react';
+import { useStore } from '../hooks/useStore';
+import { Participant, ReadingHistory } from '../types';
+
+interface ReportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+type FilterType = 'geral' | 'semanal' | 'mensal' | 'periodo';
+
+interface ReportEntry {
+  studentName: string;
+  history: ReadingHistory;
+}
+
+export function ReportModal({ isOpen, onClose }: ReportModalProps) {
+  const participants = useStore(state => state.participants);
+  const [filter, setFilter] = useState<FilterType>('geral');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  if (!isOpen) return null;
+
+  // Função para checar se a data está no período
+  const isDateInRange = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    if (filter === 'geral') return true;
+    
+    if (filter === 'semanal') {
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return date >= oneWeekAgo && date <= now;
+    }
+    
+    if (filter === 'mensal') {
+      const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      return date >= oneMonthAgo && date <= now;
+    }
+    
+    if (filter === 'periodo') {
+      if (!startDate || !endDate) return true;
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      return date >= start && date <= end;
+    }
+
+    return true;
+  };
+
+  // Coletar e formatar todos os dados para o relatório
+  const reportData: ReportEntry[] = [];
+  
+  participants.forEach(p => {
+    if (p.history) {
+      p.history.forEach(h => {
+        if (isDateInRange(h.date)) {
+          reportData.push({
+            studentName: p.name,
+            history: h
+          });
+        }
+      });
+    }
+  });
+
+  // Ordenar por data (mais recente primeiro)
+  reportData.sort((a, b) => new Date(b.history.date).getTime() - new Date(a.history.date).getTime());
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <FileText className="text-emerald-600" />
+            Relatório de Leituras
+          </h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Filtros */}
+        <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-wrap gap-4 items-end">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Relatório</label>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as FilterType)}
+              className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+            >
+              <option value="geral">Geral (Tudo)</option>
+              <option value="semanal">Últimos 7 dias</option>
+              <option value="mensal">Últimos 30 dias</option>
+              <option value="periodo">Por Período (Datas)</option>
+            </select>
+          </div>
+
+          {filter === 'periodo' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Data Inicial</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Data Final</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="ml-auto">
+             {/* O botão abaixo é apenas visual, mas você pode futuramente usar bibliotecas como jsPDF para baixar */}
+            <button 
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"
+              onClick={() => window.print()}
+            >
+              <Download size={18} />
+              Imprimir / PDF
+            </button>
+          </div>
+        </div>
+
+        {/* Tabela de Resultados */}
+        <div className="flex-1 overflow-auto p-6">
+          {reportData.length === 0 ? (
+            <div className="text-center py-10 text-slate-500">
+              Nenhuma leitura encontrada para este período.
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Aluno
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Livro Lido
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Páginas (Pontos)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {reportData.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        {new Date(item.history.date).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                        {item.studentName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        <span className="font-medium text-slate-700">{item.history.bookTitle}</span>
+                        <br />
+                        <span className="text-xs text-slate-400">Tombo: {item.history.bookId}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-emerald-600">
+                        +{item.history.pages}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  password     String   // Senha em hash
+  name         String?
+  isFirstLogin Boolean  @default(true)
+}
+
+model User {
+  id             Int              @id @default(autoincrement())
+  name           String
+  matricula      String?
+  email          String?
+  telefone       String?
+  endereco       String?          // Novo campo
+  isParticipant  Boolean          @default(false)
+  score          Int              @default(0)
+  ReadingHistory ReadingHistory[]
+}
+
+model Book {
+  id          Int       @id @default(autoincrement())
+  title       String
+  pages       Int       @default(0)
+  BookCopy    BookCopy[]
+}
+
+model BookCopy {
+  tombo          String           @id // The physical identifier (6 digits)
+  bookId         Int
+  book           Book             @relation(fields: [bookId], references: [id])
+  ReadingHistory ReadingHistory[]
+}
+
+model ReadingHistory {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  bookTombo  String
+  bookCopy   BookCopy @relation(fields: [bookTombo], references: [tombo])
+  date       DateTime @default(now())
+}

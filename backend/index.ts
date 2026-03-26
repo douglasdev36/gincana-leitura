@@ -12,25 +12,10 @@ const prisma = new PrismaClient();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Configuração segura de CORS (Aceita Várias Portas Locais e o .env)
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175'
-].filter(Boolean) as string[];
-
+// Configuração segura de CORS (Aceita qualquer origem)
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir requisições sem origin (como postman) ou que estejam na lista
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: '*', // Permite qualquer site (incluindo Vercel, localhost, etc)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true
 }));
 
 app.use(express.json());

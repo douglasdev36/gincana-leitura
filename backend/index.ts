@@ -39,6 +39,38 @@ setInterval(() => {
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 // ==========================================
+// ROTA SECRETA DE EMERGÊNCIA (Resetar Admin)
+// ==========================================
+app.get('/api/reset-admin-secreto', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash('123', 10);
+    
+    // Tenta atualizar. Se não existir, cria.
+    const admin = await prisma.admin.upsert({
+      where: { username: 'admin' },
+      update: {
+        password: hashedPassword,
+        isFirstLogin: true
+      },
+      create: {
+        username: 'admin',
+        password: hashedPassword,
+        name: 'Administrador da Biblioteca',
+        isFirstLogin: true
+      }
+    });
+
+    res.status(200).json({ 
+      message: '✅ Senha resetada com sucesso para "123". Você já pode fazer login!',
+      admin: admin.username
+    });
+  } catch (error: any) {
+    console.error('Erro no reset:', error);
+    res.status(500).json({ error: 'Erro ao resetar admin', details: error.message });
+  }
+});
+
+// ==========================================
 // AUTH (Login)
 // ==========================================
 

@@ -43,6 +43,7 @@ const xlsx = require('xlsx');
 
 type SeedStatus = 'idle' | 'running' | 'done' | 'error';
 type SeedResult = {
+  versao: string;
   message: string;
   usuarios_injetados: number;
   livros_injetados: number;
@@ -51,6 +52,8 @@ type SeedResult = {
   usuarios_pulados: number;
   livros_pulados: number;
 };
+
+const SEED_ENDPOINT_VERSION = '2026-03-27-03';
 
 let seedJobStatus: SeedStatus = 'idle';
 let seedJobStartedAt: string | null = null;
@@ -247,23 +250,25 @@ const runEmergencySeed = async (): Promise<SeedResult> => {
     for (const c of found) existingTombos.add(c.tombo);
   }
 
-  const bookCopiesToCreate: { tombo: string; bookId: number }[] = [];
+  const bookCopyByTombo = new Map<string, number>();
   for (const [title, info] of booksByTitle.entries()) {
     const bookId = booksInDb.get(title)!.id;
     for (const t of info.tombos) {
-      if (!existingTombos.has(t)) {
-        bookCopiesToCreate.push({ tombo: t, bookId });
-      }
+      if (existingTombos.has(t)) continue;
+      if (bookCopyByTombo.has(t)) continue;
+      bookCopyByTombo.set(t, bookId);
     }
   }
 
   let booksCount = 0;
+  const bookCopiesToCreate = Array.from(bookCopyByTombo.entries()).map(([tombo, bookId]) => ({ tombo, bookId }));
   for (const part of chunk(bookCopiesToCreate, 1000)) {
     const created = await prisma.bookCopy.createMany({ data: part, skipDuplicates: true });
     booksCount += created.count;
   }
 
   return {
+    versao: SEED_ENDPOINT_VERSION,
     message: '✅ DADOS INJETADOS COM SUCESSO! Admins não foram alterados.',
     usuarios_injetados: usersCount,
     livros_injetados: booksCount,
@@ -285,6 +290,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
     if (seedJobStatus === 'running' && seedJobPromise) {
       if (!shouldWait) {
         return res.status(202).json({
+          versao: SEED_ENDPOINT_VERSION,
           status: seedJobStatus,
           startedAt: seedJobStartedAt,
           finishedAt: seedJobFinishedAt,
@@ -318,6 +324,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
 
     if (!shouldWait) {
       return res.status(202).json({
+        versao: SEED_ENDPOINT_VERSION,
         status: seedJobStatus,
         startedAt: seedJobStartedAt,
         finishedAt: seedJobFinishedAt,
@@ -335,6 +342,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
 
 app.get('/api/reset-admin-status', (req, res) => {
   res.status(200).json({
+    versao: SEED_ENDPOINT_VERSION,
     status: seedJobStatus,
     startedAt: seedJobStartedAt,
     finishedAt: seedJobFinishedAt,

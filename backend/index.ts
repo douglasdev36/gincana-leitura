@@ -83,7 +83,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
     }
 
     // Injetar Livros (Com lógica de múltiplos tombos)
-    const booksWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'informação_livros.xlsx'));
+    const booksWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'informação_livro.xlsx'));
     const booksSheet = booksWorkbook.Sheets[booksWorkbook.SheetNames[0]];
     const booksData = xlsx.utils.sheet_to_json(booksSheet);
 

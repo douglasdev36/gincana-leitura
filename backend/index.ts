@@ -41,176 +41,306 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 const path = require('path');
 const xlsx = require('xlsx');
 
+type SeedStatus = 'idle' | 'running' | 'done' | 'error';
+type SeedResult = {
+  message: string;
+  usuarios_injetados: number;
+  livros_injetados: number;
+  usuarios_lidos: number;
+  livros_lidos: number;
+  usuarios_pulados: number;
+  livros_pulados: number;
+};
+
+let seedJobStatus: SeedStatus = 'idle';
+let seedJobStartedAt: string | null = null;
+let seedJobFinishedAt: string | null = null;
+let seedJobResult: SeedResult | null = null;
+let seedJobError: string | null = null;
+let seedJobPromise: Promise<SeedResult> | null = null;
+
+const chunk = <T,>(arr: T[], size: number) => {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
+
+const normalizeKey = (key: string) =>
+  String(key)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+
+const getCell = (row: any, candidates: string[]) => {
+  if (!row || typeof row !== 'object') return undefined;
+
+  for (const candidate of candidates) {
+    const directValue = row[candidate];
+    if (directValue !== undefined && directValue !== null && String(directValue).trim() !== '') {
+      return directValue;
+    }
+
+    const target = normalizeKey(candidate);
+    const foundKey = Object.keys(row).find((k) => normalizeKey(k) === target);
+    if (foundKey) {
+      const foundValue = row[foundKey];
+      if (foundValue !== undefined && foundValue !== null && String(foundValue).trim() !== '') {
+        return foundValue;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const runEmergencySeed = async (): Promise<SeedResult> => {
+  const usersWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'usuarios_quissama.xlsx'));
+  const usersSheet = usersWorkbook.Sheets[usersWorkbook.SheetNames[0]];
+  const usersData = xlsx.utils.sheet_to_json(usersSheet, { defval: null });
+
+  const usersByMatricula = new Map<string, { name: string; matricula: string; email: string | null; telefone: string | null; endereco: string | null }>();
+  let usersSkipped = 0;
+
+  for (const row of usersData) {
+    const fullNameRaw = getCell(row, ['Nome completo', 'Nome Completo']);
+    const matriculaRaw = getCell(row, ['Matrícula', 'Matricula']);
+
+    if (!fullNameRaw || !matriculaRaw) {
+      usersSkipped++;
+      continue;
+    }
+
+    const fullName = String(fullNameRaw).trim();
+    const matriculaStr = String(matriculaRaw).trim();
+
+    if (!fullName || !matriculaStr) {
+      usersSkipped++;
+      continue;
+    }
+
+    const emailRaw = getCell(row, ['E-mail', 'Email']);
+    const telefoneRaw = getCell(row, ['Telefone']);
+    const enderecoRaw = getCell(row, ['Endereço', 'Endereco']);
+
+    usersByMatricula.set(matriculaStr, {
+      name: fullName,
+      matricula: matriculaStr,
+      email: emailRaw ? String(emailRaw).trim() : null,
+      telefone: telefoneRaw ? String(telefoneRaw).trim() : null,
+      endereco: enderecoRaw ? String(enderecoRaw).trim() : null,
+    });
+  }
+
+  const matriculas = Array.from(usersByMatricula.keys());
+  const existingMatriculas = new Set<string>();
+  for (const part of chunk(matriculas, 1000)) {
+    const existing = await prisma.user.findMany({
+      where: { matricula: { in: part } },
+      select: { matricula: true },
+    });
+    for (const u of existing) {
+      if (u.matricula) existingMatriculas.add(u.matricula);
+    }
+  }
+
+  const usersToCreate = matriculas
+    .filter((m) => !existingMatriculas.has(m))
+    .map((m) => usersByMatricula.get(m)!)
+    .map((u) => ({
+      name: u.name,
+      matricula: u.matricula,
+      email: u.email,
+      telefone: u.telefone,
+      endereco: u.endereco,
+    }));
+
+  let usersCount = 0;
+  if (usersToCreate.length > 0) {
+    const created = await prisma.user.createMany({ data: usersToCreate });
+    usersCount = created.count;
+  }
+
+  const booksWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'informação_livro.xlsx'));
+  const booksSheet = booksWorkbook.Sheets[booksWorkbook.SheetNames[0]];
+  const booksData = xlsx.utils.sheet_to_json(booksSheet, { defval: null });
+
+  const booksByTitle = new Map<string, { pages: number; tombos: Set<string> }>();
+  let booksSkipped = 0;
+
+  for (const row of booksData) {
+    const titleRaw = getCell(row, ['Título', 'Titulo', 'titulo']);
+    const rawPages = getCell(row, ['Descrição Física', 'Descricao Fisica', 'descrição fisica']);
+    const rawTombos = getCell(row, ['Número de tombo', 'Numero de tombo', 'numero de tombo']);
+
+    if (!titleRaw || !rawTombos) {
+      booksSkipped++;
+      continue;
+    }
+
+    const title = String(titleRaw).trim();
+    if (!title) {
+      booksSkipped++;
+      continue;
+    }
+
+    let pages = 0;
+    if (rawPages) {
+      const match = String(rawPages).match(/(\d+)\s*p\.?/i);
+      if (match && match[1]) pages = parseInt(match[1], 10);
+    }
+
+    const tomboArray = String(rawTombos)
+      .split(/[,\n;]+/)
+      .map((t: string) => t.trim())
+      .filter(Boolean);
+    if (tomboArray.length === 0) {
+      booksSkipped++;
+      continue;
+    }
+
+    const existing = booksByTitle.get(title);
+    if (!existing) {
+      booksByTitle.set(title, { pages, tombos: new Set(tomboArray) });
+    } else {
+      existing.pages = Math.max(existing.pages, pages);
+      for (const t of tomboArray) existing.tombos.add(t);
+    }
+  }
+
+  const titles = Array.from(booksByTitle.keys());
+  const booksInDb = new Map<string, { id: number; pages: number }>();
+  for (const part of chunk(titles, 500)) {
+    const found = await prisma.book.findMany({
+      where: { title: { in: part } },
+      select: { id: true, title: true, pages: true },
+    });
+    for (const b of found) {
+      if (!booksInDb.has(b.title)) booksInDb.set(b.title, { id: b.id, pages: b.pages });
+    }
+  }
+
+  for (const title of titles) {
+    const desiredPages = booksByTitle.get(title)!.pages;
+    const existing = booksInDb.get(title);
+    if (!existing) {
+      const created = await prisma.book.create({ data: { title, pages: desiredPages } });
+      booksInDb.set(title, { id: created.id, pages: created.pages });
+    } else if (desiredPages > 0 && existing.pages === 0) {
+      const updated = await prisma.book.update({ where: { id: existing.id }, data: { pages: desiredPages } });
+      booksInDb.set(title, { id: updated.id, pages: updated.pages });
+    }
+  }
+
+  const allTombos: string[] = [];
+  for (const { tombos } of booksByTitle.values()) {
+    for (const t of tombos) allTombos.push(t);
+  }
+
+  const existingTombos = new Set<string>();
+  for (const part of chunk(allTombos, 1000)) {
+    const found = await prisma.bookCopy.findMany({
+      where: { tombo: { in: part } },
+      select: { tombo: true },
+    });
+    for (const c of found) existingTombos.add(c.tombo);
+  }
+
+  const bookCopiesToCreate: { tombo: string; bookId: number }[] = [];
+  for (const [title, info] of booksByTitle.entries()) {
+    const bookId = booksInDb.get(title)!.id;
+    for (const t of info.tombos) {
+      if (!existingTombos.has(t)) {
+        bookCopiesToCreate.push({ tombo: t, bookId });
+      }
+    }
+  }
+
+  let booksCount = 0;
+  for (const part of chunk(bookCopiesToCreate, 1000)) {
+    const created = await prisma.bookCopy.createMany({ data: part, skipDuplicates: true });
+    booksCount += created.count;
+  }
+
+  return {
+    message: '✅ DADOS INJETADOS COM SUCESSO! Admins não foram alterados.',
+    usuarios_injetados: usersCount,
+    livros_injetados: booksCount,
+    usuarios_lidos: usersData.length,
+    livros_lidos: booksData.length,
+    usuarios_pulados: usersSkipped,
+    livros_pulados: booksSkipped,
+  };
+};
+
 // ==========================================
 // ROTA SECRETA DE EMERGÊNCIA (Apenas Injetar Dados)
 // ==========================================
 app.get('/api/reset-admin-secreto', async (req, res) => {
   try {
-    // ------------------------------------------------
-    // INJETANDO PLANILHAS (SEED) DIRETO DO RENDER
-    // ------------------------------------------------
-    
-    const normalizeKey = (key: string) =>
-      String(key)
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, ' ');
+    const wait = String(req.query.wait ?? '').toLowerCase();
+    const shouldWait = wait === '1' || wait === 'true';
 
-    const getCell = (row: any, candidates: string[]) => {
-      if (!row || typeof row !== 'object') return undefined;
-
-      for (const candidate of candidates) {
-        const directValue = row[candidate];
-        if (directValue !== undefined && directValue !== null && String(directValue).trim() !== '') {
-          return directValue;
-        }
-
-        const target = normalizeKey(candidate);
-        const foundKey = Object.keys(row).find((k) => normalizeKey(k) === target);
-        if (foundKey) {
-          const foundValue = row[foundKey];
-          if (foundValue !== undefined && foundValue !== null && String(foundValue).trim() !== '') {
-            return foundValue;
-          }
-        }
-      }
-
-      return undefined;
-    };
-
-    // Injetar Usuários
-    const usersWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'usuarios_quissama.xlsx'));
-    const usersSheet = usersWorkbook.Sheets[usersWorkbook.SheetNames[0]];
-    const usersData = xlsx.utils.sheet_to_json(usersSheet, { defval: null });
-
-    let usersCount = 0;
-    let usersSkipped = 0;
-    for (const row of usersData) {
-      const fullNameRaw = getCell(row, ['Nome completo', 'Nome Completo']);
-      const matriculaRaw = getCell(row, ['Matrícula', 'Matricula']);
-
-      if (!fullNameRaw || !matriculaRaw) {
-        usersSkipped++;
-        continue;
-      }
-
-      const fullName = String(fullNameRaw).trim();
-      const matriculaStr = String(matriculaRaw).trim();
-
-      if (!fullName || !matriculaStr) {
-        usersSkipped++;
-        continue;
-      }
-      
-      const existingUser = await prisma.user.findFirst({
-        where: { matricula: matriculaStr }
-      });
-      
-      if (!existingUser) {
-        const emailRaw = getCell(row, ['E-mail', 'Email']);
-        const telefoneRaw = getCell(row, ['Telefone']);
-        const enderecoRaw = getCell(row, ['Endereço', 'Endereco']);
-
-        await prisma.user.create({
-          data: {
-            name: fullName,
-            matricula: matriculaStr,
-            email: emailRaw ? String(emailRaw).trim() : null,
-            telefone: telefoneRaw ? String(telefoneRaw).trim() : null,
-            endereco: enderecoRaw ? String(enderecoRaw).trim() : null,
-          }
+    if (seedJobStatus === 'running' && seedJobPromise) {
+      if (!shouldWait) {
+        return res.status(202).json({
+          status: seedJobStatus,
+          startedAt: seedJobStartedAt,
+          finishedAt: seedJobFinishedAt,
+          statusUrl: '/api/reset-admin-status',
         });
-        usersCount++;
       }
+
+      const result = await seedJobPromise;
+      return res.status(200).json(result);
     }
 
-    // Injetar Livros (Com lógica de múltiplos tombos)
-    const booksWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'informação_livro.xlsx'));
-    const booksSheet = booksWorkbook.Sheets[booksWorkbook.SheetNames[0]];
-    const booksData = xlsx.utils.sheet_to_json(booksSheet, { defval: null });
+    seedJobStatus = 'running';
+    seedJobStartedAt = new Date().toISOString();
+    seedJobFinishedAt = null;
+    seedJobResult = null;
+    seedJobError = null;
 
-    let booksCount = 0;
-    let booksSkipped = 0;
-    for (const row of booksData) {
-      const titleRaw = getCell(row, ['Título', 'Titulo', 'titulo']);
-      const rawPages = getCell(row, ['Descrição Física', 'Descricao Fisica', 'descrição fisica']);
-      const rawTombos = getCell(row, ['Número de tombo', 'Numero de tombo', 'numero de tombo']);
-
-      if (!titleRaw || !rawTombos) {
-        booksSkipped++;
-        continue;
-      }
-
-      let pages = 0;
-      if (rawPages) {
-        const match = String(rawPages).match(/(\d+)\s*p\.?/i);
-        if (match && match[1]) {
-          pages = parseInt(match[1], 10);
-        }
-      }
-
-      const title = String(titleRaw).trim();
-      const tomboArray = String(rawTombos)
-        .split(/[,\n;]+/)
-        .map((t: string) => t.trim())
-        .filter(Boolean);
-
-      if (!title || tomboArray.length === 0) {
-        booksSkipped++;
-        continue;
-      }
-
-      const existingCopies = await prisma.bookCopy.findMany({
-        where: { tombo: { in: tomboArray } },
-        select: { tombo: true },
+    seedJobPromise = runEmergencySeed()
+      .then((result) => {
+        seedJobStatus = 'done';
+        seedJobFinishedAt = new Date().toISOString();
+        seedJobResult = result;
+        return result;
+      })
+      .catch((err: any) => {
+        seedJobStatus = 'error';
+        seedJobFinishedAt = new Date().toISOString();
+        seedJobError = err?.message ? String(err.message) : String(err);
+        throw err;
       });
-      const existingSet = new Set(existingCopies.map((c) => c.tombo));
-      const missingTombos = tomboArray.filter((t) => !existingSet.has(t));
-      if (missingTombos.length === 0) {
-        continue;
-      }
 
-      let bookRecord = await prisma.book.findFirst({ where: { title } });
-      if (!bookRecord) {
-        bookRecord = await prisma.book.create({
-          data: {
-            title,
-            pages,
-          }
-        });
-      } else if (pages > 0 && bookRecord.pages === 0) {
-        bookRecord = await prisma.book.update({
-          where: { id: bookRecord.id },
-          data: { pages },
-        });
-      }
-
-      for (const t of missingTombos) {
-        await prisma.bookCopy.create({
-          data: {
-            tombo: t,
-            bookId: bookRecord.id
-          }
-        });
-        booksCount++;
-      }
+    if (!shouldWait) {
+      return res.status(202).json({
+        status: seedJobStatus,
+        startedAt: seedJobStartedAt,
+        finishedAt: seedJobFinishedAt,
+        statusUrl: '/api/reset-admin-status',
+      });
     }
 
-    res.status(200).json({ 
-      message: '✅ DADOS INJETADOS COM SUCESSO! Admins não foram alterados.',
-      usuarios_injetados: usersCount,
-      livros_injetados: booksCount,
-      usuarios_lidos: usersData.length,
-      livros_lidos: booksData.length,
-      usuarios_pulados: usersSkipped,
-      livros_pulados: booksSkipped
-    });
+    const result = await seedJobPromise;
+    return res.status(200).json(result);
   } catch (error: any) {
     console.error('Erro no reset/seed:', error);
     res.status(500).json({ error: 'Erro ao executar rotina de emergência', details: error.message });
   }
+});
+
+app.get('/api/reset-admin-status', (req, res) => {
+  res.status(200).json({
+    status: seedJobStatus,
+    startedAt: seedJobStartedAt,
+    finishedAt: seedJobFinishedAt,
+    result: seedJobResult,
+    error: seedJobError,
+  });
 });
 
 // ==========================================

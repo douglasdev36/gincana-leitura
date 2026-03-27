@@ -6,6 +6,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gincana de Leitura</title>
+    <style>
+      /* Esconde selos de ferramentas de dev (como o Trae Solo) */
+      [id^="trae-"], [class*="trae-"] {
+        display: none !important;
+      }
+    </style>
     <script type="module">
       if (import.meta.hot?.on) {
         import.meta.hot.on('vite:error', (error) => {

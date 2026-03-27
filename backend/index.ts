@@ -53,7 +53,7 @@ type SeedResult = {
   livros_pulados: number;
 };
 
-const SEED_ENDPOINT_VERSION = '2026-03-27-03';
+const SEED_ENDPOINT_VERSION = '2026-03-27-04';
 
 let seedJobStatus: SeedStatus = 'idle';
 let seedJobStartedAt: string | null = null;
@@ -96,6 +96,31 @@ const getCell = (row: any, candidates: string[]) => {
   }
 
   return undefined;
+};
+
+const parsePages = (value: any) => {
+  if (value === undefined || value === null) return 0;
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.trunc(value));
+  }
+
+  const raw = String(value).trim();
+  if (!raw) return 0;
+  if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+
+  const normalized = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  const withLabel = normalized.match(/(\d{1,5})\s*(p\.?|pag\.?|pagina|paginas)\b/);
+  if (withLabel?.[1]) return parseInt(withLabel[1], 10);
+
+  const anyNumber = normalized.match(/(\d{1,5})/);
+  if (anyNumber?.[1]) return parseInt(anyNumber[1], 10);
+
+  return 0;
 };
 
 const runEmergencySeed = async (): Promise<SeedResult> => {
@@ -188,11 +213,7 @@ const runEmergencySeed = async (): Promise<SeedResult> => {
       continue;
     }
 
-    let pages = 0;
-    if (rawPages) {
-      const match = String(rawPages).match(/(\d+)\s*p\.?/i);
-      if (match && match[1]) pages = parseInt(match[1], 10);
-    }
+    const pages = parsePages(rawPages);
 
     const tomboArray = String(rawTombos)
       .split(/[,\n;]+/)

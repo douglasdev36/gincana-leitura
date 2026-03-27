@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BookOpen, PlusCircle, Edit3, UserPlus, CheckCircle } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { api } from '../services/api';
-import { Book, Student } from '../types';
+import { Book } from '../types';
 import { InputAutocomplete } from './InputAutocomplete';
 import { NewUserModal } from './NewUserModal';
 
@@ -11,8 +11,8 @@ export function BookSearch() {
   const [book, setBook] = useState<Book | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isNewUserModalOpen, setIsNewUserModalOpen] = useState(false);
+  const tomboInputRef = useRef<HTMLInputElement>(null);
 
   // Estados para cadastro/atualização de livro
   const [isRegisteringBook, setIsRegisteringBook] = useState(false);
@@ -23,6 +23,13 @@ export function BookSearch() {
   const participants = useStore(state => state.participants);
   const addScore = useStore(state => state.addScore);
   const addParticipant = useStore(state => state.addParticipant);
+  const activeStudent = useStore(state => state.activeStudent);
+  const setActiveStudent = useStore(state => state.setActiveStudent);
+
+  useEffect(() => {
+    if (!activeStudent) return;
+    tomboInputRef.current?.focus();
+  }, [activeStudent]);
 
   useEffect(() => {
     async function fetchBook() {
@@ -94,16 +101,16 @@ export function BookSearch() {
   };
 
   const handleRegister = async () => {
-    if (!book || !selectedStudent) return;
+    if (!book || !activeStudent) return;
     
     // Verifica se o aluno já é um participante
-    const isAlreadyParticipant = participants.some(p => p.id === selectedStudent.id);
+    const isAlreadyParticipant = participants.some(p => p.id === activeStudent.id);
     
     try {
       if (!isAlreadyParticipant) {
         // Se não for, pergunta se deseja adicioná-lo à gincana
         const wantsToParticipate = window.confirm(
-          `${selectedStudent.name} ainda não está na gincana. Deseja adicioná-lo e registrar esta leitura?`
+          `${activeStudent.name} ainda não está na gincana. Deseja adicioná-lo e registrar esta leitura?`
         );
         
         if (!wantsToParticipate) {
@@ -111,18 +118,18 @@ export function BookSearch() {
         }
         
         // Adiciona o aluno à gincana
-        await addParticipant(selectedStudent);
+        await addParticipant(activeStudent);
       }
       
       // Adiciona a pontuação e o histórico
-      await addScore(selectedStudent.id, book);
-      alert(`Empréstimo registrado com sucesso! ${book.pages} pontos adicionados para ${selectedStudent.name}.`);
+      await addScore(activeStudent.id, book);
+      alert(`Empréstimo registrado com sucesso! ${book.pages} pontos adicionados para ${activeStudent.name}.`);
       
       // Reseta o formulário
       setTombo('');
       setBook(null);
-      setSelectedStudent(null);
-    } catch (error) {
+      setActiveStudent(null);
+    } catch {
       alert("Erro ao registrar leitura. Tente novamente.");
     }
   };
@@ -157,6 +164,7 @@ export function BookSearch() {
           value={tombo}
           onChange={(e) => setTombo(e.target.value.replace(/\D/g, ''))}
           disabled={isRegisteringBook || isUpdatingPages}
+          ref={tomboInputRef}
         />
         {isLoading && <p className="text-sm text-slate-500 mt-2">Buscando/Processando...</p>}
         {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
@@ -247,17 +255,17 @@ export function BookSearch() {
       )}
 
       <div className="mb-4">
-        <InputAutocomplete onSelect={(student) => setSelectedStudent(student)} />
-        {selectedStudent && (
+        <InputAutocomplete onSelect={(student) => setActiveStudent(student)} presetValue={activeStudent?.name ?? ''} />
+        {activeStudent && (
           <p className="text-sm text-emerald-600 mt-2 font-medium">
-            Aluno selecionado: {selectedStudent.name}
+            Aluno selecionado: {activeStudent.name}
           </p>
         )}
       </div>
 
       <button
         onClick={handleRegister}
-        disabled={!book || !selectedStudent}
+        disabled={!book || !activeStudent}
         className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
       >
         <CheckCircle size={18} />
@@ -268,7 +276,7 @@ export function BookSearch() {
       <NewUserModal 
         isOpen={isNewUserModalOpen} 
         onClose={() => setIsNewUserModalOpen(false)}
-        onUserCreated={(user) => setSelectedStudent(user)}
+        onUserCreated={(user) => setActiveStudent(user)}
       />
     </>
   );

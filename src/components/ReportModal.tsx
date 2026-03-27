@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { X, FileText, Download } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
-import { Participant, ReadingHistory } from '../types';
+import { ReadingHistory } from '../types';
 
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type FilterType = 'geral' | 'semanal' | 'mensal' | 'periodo';
+type FilterType = 'geral' | 'semanal' | 'mensal' | 'periodo' | 'ranking';
 
 interface ReportEntry {
   studentName: string;
@@ -71,6 +71,37 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
   // Ordenar por data (mais recente primeiro)
   reportData.sort((a, b) => new Date(b.history.date).getTime() - new Date(a.history.date).getTime());
 
+  const sortedParticipants = [...participants].sort((a, b) => b.score - a.score);
+
+  const downloadRankingCsv = () => {
+    const escapeCsv = (value: string | number) => {
+      const s = String(value ?? '');
+      if (/[;"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+
+    const rows: string[] = [];
+    rows.push(['Posição', 'Aluno', 'Pontos', 'Leituras'].join(';'));
+
+    sortedParticipants.forEach((p, idx) => {
+      const readingsCount = p.history?.length ?? 0;
+      rows.push(
+        [idx + 1, p.name, p.score, readingsCount]
+          .map(escapeCsv)
+          .join(';')
+      );
+    });
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const iso = new Date().toISOString().replace(/[:.]/g, '-');
+    a.download = `ranking-${iso}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
@@ -99,6 +130,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
               <option value="semanal">Últimos 7 dias</option>
               <option value="mensal">Últimos 30 dias</option>
               <option value="periodo">Por Período (Datas)</option>
+              <option value="ranking">Ranking (Pontuação)</option>
             </select>
           </div>
 
@@ -125,8 +157,16 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
             </>
           )}
 
-          <div className="ml-auto">
-             {/* O botão abaixo é apenas visual, mas você pode futuramente usar bibliotecas como jsPDF para baixar */}
+          <div className="ml-auto flex gap-2">
+            {filter === 'ranking' && (
+              <button
+                className="flex items-center gap-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-4 py-2 rounded-md font-medium transition-colors shadow-sm border border-emerald-200"
+                onClick={downloadRankingCsv}
+              >
+                <Download size={18} />
+                Baixar CSV
+              </button>
+            )}
             <button 
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"
               onClick={() => window.print()}
@@ -139,7 +179,52 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
 
         {/* Tabela de Resultados */}
         <div className="flex-1 overflow-auto p-6">
-          {reportData.length === 0 ? (
+          {filter === 'ranking' ? (
+            sortedParticipants.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                Nenhum participante encontrado.
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Posição
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Aluno
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Pontos
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Leituras
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-slate-200">
+                    {sortedParticipants.map((p, idx) => (
+                      <tr key={p.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                          {idx + 1}º
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                          {p.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-emerald-600">
+                          {p.score}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-slate-600">
+                          {p.history?.length ?? 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : reportData.length === 0 ? (
             <div className="text-center py-10 text-slate-500">
               Nenhuma leitura encontrada para este período.
             </div>

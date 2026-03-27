@@ -4,6 +4,7 @@ import { useStore } from '../hooks/useStore';
 export function ParticipantList() {
   const participants = useStore((state) => state.participants);
   const removeParticipant = useStore((state) => state.removeParticipant);
+  const setActiveStudent = useStore((state) => state.setActiveStudent);
 
   if (participants.length === 0) {
     return (
@@ -18,15 +19,19 @@ export function ParticipantList() {
       <h3 className="text-lg font-semibold text-slate-800 mb-3">
         Participantes da Gincana ({participants.length})
       </h3>
-      <ul className="space-y-2">
+      <ul className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
         {participants.map((participant) => (
           <li
             key={participant.id}
-            className="flex items-center justify-between bg-white px-4 py-2 border border-slate-200 rounded-md shadow-sm"
+            className="flex items-center justify-between bg-white px-4 py-2 border border-slate-200 rounded-md shadow-sm cursor-pointer hover:bg-emerald-50 transition-colors"
+            onClick={() => setActiveStudent({ id: participant.id, name: participant.name })}
           >
             <span className="font-medium text-slate-700">{participant.name}</span>
             <button
-              onClick={() => removeParticipant(participant.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeParticipant(participant.id);
+              }}
               className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
               title="Remover participante"
             >

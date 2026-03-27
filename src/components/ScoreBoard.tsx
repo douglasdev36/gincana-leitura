@@ -44,7 +44,7 @@ export function ScoreBoard() {
           </button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
           {sortedParticipants.map((participant, index) => (
             <div 
               key={participant.id} 

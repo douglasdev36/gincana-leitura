@@ -4,7 +4,9 @@ import { api } from '../services/api';
 
 interface GincanaState {
   participants: Participant[];
+  activeStudent: Student | null;
   setParticipants: (participants: Participant[]) => void;
+  setActiveStudent: (student: Student | null) => void;
   loadParticipants: () => Promise<void>;
   addParticipant: (student: Student) => Promise<void>;
   removeParticipant: (studentId: string) => Promise<void>;
@@ -13,8 +15,10 @@ interface GincanaState {
 
 export const useStore = create<GincanaState>((set, get) => ({
   participants: [],
+  activeStudent: null,
   
   setParticipants: (participants) => set({ participants }),
+  setActiveStudent: (student) => set({ activeStudent: student }),
 
   loadParticipants: async () => {
     const data = await api.getParticipants();

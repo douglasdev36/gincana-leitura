@@ -3,9 +3,14 @@ import { Search, UserPlus } from 'lucide-react';
 import { useDebounce } from '../hooks/useDebounce';
 import { api } from '../services/api';
 import { Student } from '../types';
-import { useStore } from '../hooks/useStore';
 
-export function InputAutocomplete({ onSelect }: { onSelect?: (student: Student) => void }) {
+export function InputAutocomplete({
+  onSelect,
+  presetValue
+}: {
+  onSelect?: (student: Student) => void;
+  presetValue?: string;
+}) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +18,12 @@ export function InputAutocomplete({ onSelect }: { onSelect?: (student: Student) 
   
   const debouncedQuery = useDebounce(query, 300);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (presetValue === undefined) return;
+    setQuery(presetValue);
+    setIsOpen(false);
+  }, [presetValue]);
 
   useEffect(() => {
     async function fetchStudents() {

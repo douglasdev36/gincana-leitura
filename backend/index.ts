@@ -61,7 +61,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
       
       const matriculaStr = String(row['Matrícula']).trim();
       
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await prisma.user.findFirst({
         where: { matricula: matriculaStr }
       });
       

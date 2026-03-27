@@ -42,27 +42,10 @@ const path = require('path');
 const xlsx = require('xlsx');
 
 // ==========================================
-// ROTA SECRETA DE EMERGÊNCIA (Seed e Reset Admin)
+// ROTA SECRETA DE EMERGÊNCIA (Apenas Injetar Dados)
 // ==========================================
 app.get('/api/reset-admin-secreto', async (req, res) => {
   try {
-    const hashedPassword = await bcrypt.hash('123', 10);
-    
-    // Tenta atualizar. Se não existir, cria.
-    const admin = await prisma.admin.upsert({
-      where: { username: 'admin' },
-      update: {
-        password: hashedPassword,
-        isFirstLogin: true
-      },
-      create: {
-        username: 'admin',
-        password: hashedPassword,
-        name: 'Administrador da Biblioteca',
-        isFirstLogin: true
-      }
-    });
-
     // ------------------------------------------------
     // INJETANDO PLANILHAS (SEED) DIRETO DO RENDER
     // ------------------------------------------------
@@ -127,8 +110,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
     }
 
     res.status(200).json({ 
-      message: '✅ SUCESSO ABSOLUTO!',
-      admin: admin.username,
+      message: '✅ DADOS INJETADOS COM SUCESSO! Admins não foram alterados.',
       usuarios_injetados: usersCount,
       livros_injetados: booksCount
     });

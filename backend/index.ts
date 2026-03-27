@@ -38,8 +38,11 @@ setInterval(() => {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
+const path = require('path');
+const xlsx = require('xlsx');
+
 // ==========================================
-// ROTA SECRETA DE EMERGÊNCIA (Resetar Admin)
+// ROTA SECRETA DE EMERGÊNCIA (Seed e Reset Admin)
 // ==========================================
 app.get('/api/reset-admin-secreto', async (req, res) => {
   try {
@@ -60,13 +63,78 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
       }
     });
 
+    // ------------------------------------------------
+    // INJETANDO PLANILHAS (SEED) DIRETO DO RENDER
+    // ------------------------------------------------
+    
+    // Injetar Usuários
+    const usersWorkbook = xlsx.readFile(path.join(__dirname, 'usuarios_quissama.xlsx'));
+    const usersSheet = usersWorkbook.Sheets[usersWorkbook.SheetNames[0]];
+    const usersData = xlsx.utils.sheet_to_json(usersSheet);
+
+    let usersCount = 0;
+    for (const row of usersData) {
+      if (!row['Nome Completo'] || !row['Matrícula']) continue;
+      await prisma.user.upsert({
+        where: { matricula: String(row['Matrícula']) },
+        update: {},
+        create: {
+          nome: String(row['Nome Completo']),
+          matricula: String(row['Matrícula']),
+          email: row['E-mail'] ? String(row['E-mail']) : null,
+          telefone: row['Telefone'] ? String(row['Telefone']) : null,
+          endereco: row['Endereço'] ? String(row['Endereço']) : null,
+        },
+      });
+      usersCount++;
+    }
+
+    // Injetar Livros (Com lógica de múltiplos tombos)
+    const booksWorkbook = xlsx.readFile(path.join(__dirname, 'informação_livros.xlsx'));
+    const booksSheet = booksWorkbook.Sheets[booksWorkbook.SheetNames[0]];
+    const booksData = xlsx.utils.sheet_to_json(booksSheet);
+
+    let booksCount = 0;
+    for (const row of booksData) {
+      const title = row['titulo'];
+      const rawPages = row['descrição fisica'];
+      const rawTombos = row['numero de tombo'];
+
+      if (!title || !rawTombos) continue;
+
+      let pages = 0;
+      if (rawPages) {
+        const match = String(rawPages).match(/(\d+)\s*p\./i);
+        if (match && match[1]) {
+          pages = parseInt(match[1], 10);
+        }
+      }
+
+      const tomboArray = String(rawTombos).split(',').map((t: string) => t.trim()).filter(Boolean);
+
+      for (const t of tomboArray) {
+        await prisma.book.upsert({
+          where: { tombo: t },
+          update: {},
+          create: {
+            tombo: t,
+            title: String(title),
+            pages: pages,
+          },
+        });
+        booksCount++;
+      }
+    }
+
     res.status(200).json({ 
-      message: '✅ Senha resetada com sucesso para "123". Você já pode fazer login!',
-      admin: admin.username
+      message: '✅ SUCESSO ABSOLUTO!',
+      admin: admin.username,
+      usuarios_injetados: usersCount,
+      livros_injetados: booksCount
     });
   } catch (error: any) {
-    console.error('Erro no reset:', error);
-    res.status(500).json({ error: 'Erro ao resetar admin', details: error.message });
+    console.error('Erro no reset/seed:', error);
+    res.status(500).json({ error: 'Erro ao executar rotina de emergência', details: error.message });
   }
 });
 

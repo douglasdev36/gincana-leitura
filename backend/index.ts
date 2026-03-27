@@ -51,8 +51,8 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
     // ------------------------------------------------
     
     // Injetar Usuários
-    // Precisamos resolver o caminho da planilha a partir da raiz do projeto, não do dist/
-    const usersWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'usuarios_quissama.xlsx'));
+    // Precisamos resolver o caminho da planilha a partir do diretório atual, subindo uma pasta (para sair do dist/)
+    const usersWorkbook = xlsx.readFile(path.resolve(__dirname, '..', '..', 'backend', 'usuarios_quissama.xlsx'));
     const usersSheet = usersWorkbook.Sheets[usersWorkbook.SheetNames[0]];
     const usersData = xlsx.utils.sheet_to_json(usersSheet);
 
@@ -81,7 +81,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
     }
 
     // Injetar Livros (Com lógica de múltiplos tombos)
-    const booksWorkbook = xlsx.readFile(path.resolve(__dirname, '..', 'informação_livros.xlsx'));
+    const booksWorkbook = xlsx.readFile(path.resolve(__dirname, '..', '..', 'backend', 'informação_livros.xlsx'));
     const booksSheet = booksWorkbook.Sheets[booksWorkbook.SheetNames[0]];
     const booksData = xlsx.utils.sheet_to_json(booksSheet);
 

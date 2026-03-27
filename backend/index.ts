@@ -58,18 +58,25 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
     let usersCount = 0;
     for (const row of usersData) {
       if (!row['Nome Completo'] || !row['Matrícula']) continue;
-      await prisma.user.upsert({
-        where: { matricula: String(row['Matrícula']) },
-        update: {},
-        create: {
-          nome: String(row['Nome Completo']),
-          matricula: String(row['Matrícula']),
-          email: row['E-mail'] ? String(row['E-mail']) : null,
-          telefone: row['Telefone'] ? String(row['Telefone']) : null,
-          endereco: row['Endereço'] ? String(row['Endereço']) : null,
-        },
+      
+      const matriculaStr = String(row['Matrícula']).trim();
+      
+      const existingUser = await prisma.user.findUnique({
+        where: { matricula: matriculaStr }
       });
-      usersCount++;
+      
+      if (!existingUser) {
+        await prisma.user.create({
+          data: {
+            name: String(row['Nome Completo']).trim(),
+            matricula: matriculaStr,
+            email: row['E-mail'] ? String(row['E-mail']).trim() : null,
+            telefone: row['Telefone'] ? String(row['Telefone']).trim() : null,
+            endereco: row['Endereço'] ? String(row['Endereço']).trim() : null,
+          }
+        });
+        usersCount++;
+      }
     }
 
     // Injetar Livros (Com lógica de múltiplos tombos)
@@ -95,17 +102,29 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
 
       const tomboArray = String(rawTombos).split(',').map((t: string) => t.trim()).filter(Boolean);
 
+      // Cria o livro (título base)
+      const bookRecord = await prisma.book.create({
+        data: {
+          title: String(title).trim(),
+          pages: pages,
+        }
+      });
+
+      // Cria os tombos (cópias) vinculados a esse livro
       for (const t of tomboArray) {
-        await prisma.book.upsert({
-          where: { tombo: t },
-          update: {},
-          create: {
-            tombo: t,
-            title: String(title),
-            pages: pages,
-          },
+        const existingTombo = await prisma.bookCopy.findUnique({
+          where: { tombo: t }
         });
-        booksCount++;
+        
+        if (!existingTombo) {
+          await prisma.bookCopy.create({
+            data: {
+              tombo: t,
+              bookId: bookRecord.id
+            }
+          });
+          booksCount++;
+        }
       }
     }
 

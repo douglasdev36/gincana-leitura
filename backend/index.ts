@@ -27,15 +27,6 @@ app.get('/api/ping', (req, res) => {
   res.status(200).json({ status: 'alive', message: 'Servidor acordado!', time: new Date().toISOString() });
 });
 
-// Auto-Ping: O próprio servidor se chama a cada 10 minutos (600000 ms) para não dormir
-const SELF_URL = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3000}`;
-setInterval(() => {
-  fetch(`${SELF_URL}/api/ping`)
-    .then(res => res.json())
-    .then(data => console.log(`[Auto-Ping] Servidor mantido acordado: ${data.time}`))
-    .catch(err => console.error('[Auto-Ping] Erro ao tentar acordar o servidor:', err.message));
-}, 10 * 60 * 1000);
-
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 const path = require('path');

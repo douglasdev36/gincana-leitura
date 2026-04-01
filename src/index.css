@@ -12,3 +12,67 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ==========================================
+   Estilos de Impressão (Relatórios/Modais)
+   ========================================== */
+@media print {
+  /* Esconde tudo na página por padrão */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Mostra apenas a área do relatório que queremos imprimir */
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+
+  /* Remove o fundo escuro do modal e reposiciona para imprimir limpo no topo da folha */
+  .print-modal-overlay {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    background: transparent !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  /* Remove os limites de altura, scrollbars, sombras e cantos arredondados */
+  .print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    max-height: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  /* Garante que o conteúdo interno (tabelas e listas) também cresçam sem cortar/fazer scroll */
+  .print-area .overflow-auto, 
+  .print-area .overflow-x-auto,
+  .print-area .flex-1 {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  /* Oculta os botões (X, Imprimir, Fechar, Filtros) para que não apareçam no papel */
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Força cores brancas e pretas para economizar tinta e não sair cinza/dark mode */
+  .print-area {
+    background-color: white !important;
+    color: black !important;
+  }
+}

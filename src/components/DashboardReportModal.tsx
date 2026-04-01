@@ -83,8 +83,8 @@ export function DashboardReportModal({ isOpen, onClose }: DashboardReportModalPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print-modal-overlay">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 transition-colors print-area">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
@@ -92,13 +92,13 @@ export function DashboardReportModal({ isOpen, onClose }: DashboardReportModalPr
             <TrendingUp className="text-blue-600 dark:text-blue-400" />
             Crescimento e Métricas (Evolução)
           </h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 print-hide">
             <X size={24} />
           </button>
         </div>
 
         {/* Filtros */}
-        <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap gap-4 items-center justify-between transition-colors">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap gap-4 items-center justify-between transition-colors print-hide">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Agrupar por:</label>
             <div className="flex bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 shadow-sm p-1 transition-colors">

@@ -14,6 +14,11 @@ dist-ssr
 .env
 .env.*
 
+# Excel files (planilhas de dados sensíveis)
+*.xlsx
+*.xls
+~$*.xlsx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

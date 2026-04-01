@@ -14,6 +14,7 @@ export function Dashboard() {
   let weeklyBooksRead = 0;
   let weeklyPoints = 0;
   let totalBooksRead = 0;
+  let totalPoints = 0;
 
   // Variáveis para os livros mais lidos (todos os tempos)
   // bookId -> { title, count }
@@ -23,6 +24,7 @@ export function Dashboard() {
     if (p.history) {
       p.history.forEach(h => {
         totalBooksRead++;
+        totalPoints += h.pages; // Assume que as páginas são os pontos
         
         // Conta todos os livros para o Top 5
         if (!bookCounts[h.bookId]) {
@@ -73,7 +75,13 @@ export function Dashboard() {
           <span className="text-xs font-medium text-indigo-600 uppercase tracking-wide">Livros no Total</span>
         </div>
 
-        <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 flex flex-col items-center text-center">
+        <div className="bg-teal-50 p-4 rounded-lg border border-teal-100 flex flex-col items-center text-center">
+          <Star className="text-teal-500 mb-2" size={24} />
+          <span className="text-2xl font-black text-teal-700">{totalPoints}</span>
+          <span className="text-xs font-medium text-teal-600 uppercase tracking-wide">Pontos no Total</span>
+        </div>
+
+        <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 flex flex-col items-center text-center col-span-2">
           <Users className="text-purple-500 mb-2" size={24} />
           <span className="text-2xl font-black text-purple-700">{participants.length}</span>
           <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Alunos na Gincana</span>

@@ -68,9 +68,14 @@ export function ScoreBoard() {
                 )}
                 <span className="font-medium text-slate-800">{participant.name}</span>
               </div>
-              <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded">
-                {participant.score} pts
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded mb-1">
+                  {participant.score} pts
+                </span>
+                <span className="text-xs font-medium text-slate-500">
+                  {participant.history ? participant.history.length : 0} {participant.history?.length === 1 ? 'livro' : 'livros'}
+                </span>
+              </div>
             </div>
           ))}
         </div>

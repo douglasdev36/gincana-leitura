@@ -76,9 +76,7 @@ export function Home() {
 
         {/* Coluna Central-Direita: Participantes */}
         <div className="lg:col-span-1 flex flex-col">
-          <div className="bg-white p-6 rounded-lg shadow-md border border-slate-200 flex-grow">
-            <ParticipantList />
-          </div>
+          <ParticipantList />
         </div>
 
         {/* Coluna Mais à Direita: Ranking (Renderizado condicionalmente) */}

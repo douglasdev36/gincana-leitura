@@ -39,58 +39,58 @@ export function FirstLoginModal({ isOpen, onSuccess }: FirstLoginModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-8 animate-in fade-in zoom-in-95 duration-300 transition-colors">
         
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="bg-orange-100 p-3 rounded-full mb-3 text-orange-600">
+          <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-full mb-3 text-orange-600 dark:text-orange-400">
             <ShieldAlert size={32} />
           </div>
-          <h2 className="text-xl font-bold text-slate-800">Bem-vindo(a) à Gincana!</h2>
-          <p className="text-sm text-slate-600 mt-2">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Bem-vindo(a) à Gincana!</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
             Como este é o seu primeiro acesso, é obrigatório alterar suas credenciais padrão para manter o sistema seguro.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center border border-red-200">
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md text-sm text-center border border-red-200 dark:border-red-800/50 transition-colors">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Seu Nome Completo</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Seu Nome Completo</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+              className="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors duration-200"
               placeholder="Ex: João da Silva"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Novo Nome de Usuário (Login)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Novo Nome de Usuário (Login)</label>
             <input
               type="text"
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+              className="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors duration-200"
               placeholder="Ex: joao.silva"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Nova Senha</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nova Senha</label>
             <input
               type="password"
               required
               minLength={4}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+              className="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors duration-200"
               placeholder="Digite uma senha segura"
             />
           </div>
@@ -98,7 +98,7 @@ export function FirstLoginModal({ isOpen, onSuccess }: FirstLoginModalProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:bg-emerald-400 flex justify-center"
+            className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:bg-emerald-400 dark:disabled:bg-emerald-800 flex justify-center"
           >
             {isLoading ? 'Salvando...' : 'Salvar e Acessar Sistema'}
           </button>

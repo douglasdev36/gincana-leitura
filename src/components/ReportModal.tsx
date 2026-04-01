@@ -104,27 +104,27 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 transition-colors">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <FileText className="text-emerald-600" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <FileText className="text-emerald-600 dark:text-emerald-400" />
             Relatório de Leituras
           </h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100">
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <X size={24} />
           </button>
         </div>
 
         {/* Filtros */}
-        <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-wrap gap-4 items-end">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap gap-4 items-end transition-colors">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Relatório</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Relatório</label>
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterType)}
-              className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+              className="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors duration-200"
             >
               <option value="geral">Geral (Tudo)</option>
               <option value="semanal">Últimos 7 dias</option>
@@ -137,21 +137,21 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
           {filter === 'periodo' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Data Inicial</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data Inicial</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                  className="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors duration-200"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Data Final</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data Final</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                  className="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors duration-200"
                 />
               </div>
             </>
@@ -160,7 +160,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
           <div className="ml-auto flex gap-2">
             {filter === 'ranking' && (
               <button
-                className="flex items-center gap-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-4 py-2 rounded-md font-medium transition-colors shadow-sm border border-emerald-200"
+                className="flex items-center gap-2 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/50 dark:hover:bg-emerald-900 dark:text-emerald-300 text-emerald-800 px-4 py-2 rounded-md font-medium transition-colors shadow-sm border border-emerald-200 dark:border-emerald-800"
                 onClick={downloadRankingCsv}
               >
                 <Download size={18} />
@@ -168,7 +168,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
               </button>
             )}
             <button 
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"
               onClick={() => window.print()}
             >
               <Download size={18} />
@@ -181,41 +181,41 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
         <div className="flex-1 overflow-auto p-6">
           {filter === 'ranking' ? (
             sortedParticipants.length === 0 ? (
-              <div className="text-center py-10 text-slate-500">
+              <div className="text-center py-10 text-slate-500 dark:text-slate-400">
                 Nenhum participante encontrado.
               </div>
             ) : (
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50">
+              <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg transition-colors duration-200">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Posição
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Aluno
                       </th>
-                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Pontos
                       </th>
-                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Leituras
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-slate-200">
+                  <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                     {sortedParticipants.map((p, idx) => (
-                      <tr key={p.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                           {idx + 1}º
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                           {p.name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-emerald-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-emerald-600 dark:text-emerald-400">
                           {p.score}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-slate-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-slate-600 dark:text-slate-400">
                           {p.history?.length ?? 0}
                         </td>
                       </tr>
@@ -225,43 +225,43 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
               </div>
             )
           ) : reportData.length === 0 ? (
-            <div className="text-center py-10 text-slate-500">
+            <div className="text-center py-10 text-slate-500 dark:text-slate-400">
               Nenhuma leitura encontrada para este período.
             </div>
           ) : (
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
+            <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg transition-colors duration-200">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Data
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Aluno
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Livro Lido
                     </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Páginas (Pontos)
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
+                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                   {reportData.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                         {new Date(item.history.date).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                         {item.studentName}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        <span className="font-medium text-slate-700">{item.history.bookTitle}</span>
+                      <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{item.history.bookTitle}</span>
                         <br />
-                        <span className="text-xs text-slate-400">Tombo: {item.history.bookId}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">Tombo: {item.history.bookId}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-emerald-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-emerald-600 dark:text-emerald-400">
                         +{item.history.pages}
                       </td>
                     </tr>

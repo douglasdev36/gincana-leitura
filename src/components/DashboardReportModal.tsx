@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
-import { X, TrendingUp, Download } from 'lucide-react';
+import { X, TrendingUp, Download, BarChart2 } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Line } from 'recharts';
 
 interface DashboardReportModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ViewType = 'semanal' | 'mensal';
+type ViewType = 'diario' | 'semanal' | 'mensal';
 
 interface PeriodData {
   key: string;      // Ex: "2026-03-W2" ou "2026-03"
@@ -33,7 +34,14 @@ export function DashboardReportModal({ isOpen, onClose }: DashboardReportModalPr
           let label = '';
           let dateValue = 0;
 
-          if (viewType === 'mensal') {
+          if (viewType === 'diario') {
+            const year = d.getFullYear();
+            const month = d.getMonth();
+            const date = d.getDate();
+            key = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            label = `${String(date).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+            dateValue = new Date(year, month, date).getTime();
+          } else if (viewType === 'mensal') {
             const year = d.getFullYear();
             const month = d.getMonth(); // 0-11
             key = `${year}-${String(month).padStart(2, '0')}`;
@@ -104,6 +112,16 @@ export function DashboardReportModal({ isOpen, onClose }: DashboardReportModalPr
             <div className="flex bg-white dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 shadow-sm p-1 transition-colors">
               <button
                 className={`px-4 py-1.5 text-sm font-medium rounded-sm transition-colors ${
+                  viewType === 'diario' 
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'
+                }`}
+                onClick={() => setViewType('diario')}
+              >
+                Diário
+              </button>
+              <button
+                className={`px-4 py-1.5 text-sm font-medium rounded-sm transition-colors ${
                   viewType === 'semanal' 
                     ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' 
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'
@@ -136,46 +154,94 @@ export function DashboardReportModal({ isOpen, onClose }: DashboardReportModalPr
           </div>
         </div>
 
-        {/* Tabela de Resultados */}
-        <div className="flex-1 overflow-auto p-6">
+        {/* Tabela e Gráfico */}
+        <div className="flex-1 overflow-auto p-6 flex flex-col gap-8">
           {reportData.length === 0 ? (
             <div className="text-center py-10 text-slate-500 dark:text-slate-400">
               Nenhuma leitura registrada no sistema ainda.
             </div>
           ) : (
-            <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
-              <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                <thead className="bg-slate-50 dark:bg-slate-800/50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Período ({viewType})
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Livros Lidos
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Pontos Somados
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                  {reportData.map((item, idx) => (
-                    <tr key={item.key} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        {item.label}
-                        {idx === 0 && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400">Atual</span>}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-blue-600 dark:text-blue-400">
-                        {item.booksRead}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-teal-600 dark:text-teal-400">
-                        {item.points} pts
-                      </td>
+            <>
+              {/* Gráfico */}
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                  <BarChart2 className="text-blue-500" size={20} />
+                  Gráfico de Evolução
+                </h3>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={[...reportData].reverse()}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" opacity={0.3} />
+                      <XAxis 
+                        dataKey="label" 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: '#64748b' }}
+                        dy={10}
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: '#64748b' }}
+                      />
+                      <YAxis 
+                        yAxisId="right"
+                        orientation="right"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: '#64748b' }}
+                      />
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      <Bar yAxisId="left" dataKey="booksRead" name="Livros Lidos" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                      <Line yAxisId="right" type="monotone" dataKey="points" name="Pontos Somados" stroke="#0d9488" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Tabela */}
+              <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Período ({viewType})
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Livros Lidos
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Pontos Somados
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+                    {reportData.map((item, idx) => (
+                      <tr key={item.key} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800 dark:text-slate-200">
+                          {item.label}
+                          {idx === 0 && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400">Atual</span>}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-blue-600 dark:text-blue-400">
+                          {item.booksRead}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-teal-600 dark:text-teal-400">
+                          {item.points} pts
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
         

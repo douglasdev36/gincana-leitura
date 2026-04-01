@@ -112,7 +112,7 @@ export function Dashboard() {
               Nenhuma leitura registrada ainda.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
               {top10Books.map((book, idx) => (
                 <div key={book.tombo} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-100 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                   <div className="flex items-center gap-3 overflow-hidden">

@@ -10,9 +10,10 @@ export function Dashboard() {
   startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
 
-  // Variáveis para as métricas da semana
+  // Variáveis para as métricas
   let weeklyBooksRead = 0;
   let weeklyPoints = 0;
+  let totalBooksRead = 0;
 
   // Variáveis para os livros mais lidos (todos os tempos)
   // bookId -> { title, count }
@@ -21,6 +22,8 @@ export function Dashboard() {
   participants.forEach(p => {
     if (p.history) {
       p.history.forEach(h => {
+        totalBooksRead++;
+        
         // Conta todos os livros para o Top 5
         if (!bookCounts[h.bookId]) {
           bookCounts[h.bookId] = { title: h.bookTitle, count: 0, tombo: h.bookId };
@@ -64,7 +67,13 @@ export function Dashboard() {
           <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Pontos na Semana</span>
         </div>
 
-        <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 flex flex-col items-center text-center col-span-2">
+        <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 flex flex-col items-center text-center">
+          <BookOpen className="text-indigo-500 mb-2" size={24} />
+          <span className="text-2xl font-black text-indigo-700">{totalBooksRead}</span>
+          <span className="text-xs font-medium text-indigo-600 uppercase tracking-wide">Livros no Total</span>
+        </div>
+
+        <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 flex flex-col items-center text-center">
           <Users className="text-purple-500 mb-2" size={24} />
           <span className="text-2xl font-black text-purple-700">{participants.length}</span>
           <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Alunos na Gincana</span>

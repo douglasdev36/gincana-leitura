@@ -1,8 +1,11 @@
-import { BarChart3, BookOpen, Star, Trophy, Users } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart3, BookOpen, Star, Trophy, Users, FileText } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
+import { DashboardReportModal } from './DashboardReportModal';
 
 export function Dashboard() {
   const participants = useStore(state => state.participants);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Calcula o início da semana atual (Domingo como dia 0)
   const now = new Date();
@@ -47,13 +50,22 @@ export function Dashboard() {
     .slice(0, 5);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-slate-200">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <BarChart3 className="text-blue-600" />
-          Dashboard
-        </h3>
-      </div>
+    <>
+      <div className="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <BarChart3 className="text-blue-600" />
+            Dashboard
+          </h3>
+          <button 
+            onClick={() => setIsReportModalOpen(true)}
+            className="flex items-center gap-1.5 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition-colors border border-blue-200"
+            title="Estatísticas de Crescimento"
+          >
+            <FileText size={16} />
+            Evolução
+          </button>
+        </div>
 
       {/* Métricas Rápidas */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -130,5 +142,11 @@ export function Dashboard() {
         )}
       </div>
     </div>
+      
+    <DashboardReportModal 
+      isOpen={isReportModalOpen} 
+      onClose={() => setIsReportModalOpen(false)} 
+    />
+  </>
   );
 }

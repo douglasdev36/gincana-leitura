@@ -45,9 +45,9 @@ export function Dashboard() {
     }
   });
 
-  const top5Books = Object.values(bookCounts)
+  const top10Books = Object.values(bookCounts)
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+    .slice(0, 10);
 
   return (
     <>
@@ -100,20 +100,20 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Top 5 Livros Mais Lidos */}
+        {/* Top 10 Livros Mais Lidos */}
         <div>
           <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
             <Trophy size={16} className="text-yellow-500" />
-            Top 5 Livros Mais Lidos
+            Top 10 Livros Mais Lidos
           </h4>
           
-          {top5Books.length === 0 ? (
+          {top10Books.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700">
               Nenhuma leitura registrada ainda.
             </p>
           ) : (
             <div className="space-y-2">
-              {top5Books.map((book, idx) => (
+              {top10Books.map((book, idx) => (
                 <div key={book.tombo} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-100 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                   <div className="flex items-center gap-3 overflow-hidden">
                     <span className={`flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${

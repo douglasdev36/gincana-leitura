@@ -6,6 +6,13 @@ export function ParticipantList() {
   const removeParticipant = useStore((state) => state.removeParticipant);
   const setActiveStudent = useStore((state) => state.setActiveStudent);
 
+  const handleRemove = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Tem certeza que deseja remover ${name} da gincana? O histórico de pontos não será apagado do banco de dados, mas ele deixará de aparecer no ranking.`)) {
+      removeParticipant(id);
+    }
+  };
+
   if (participants.length === 0) {
     return (
       <div className="text-slate-500 dark:text-slate-400 text-sm py-4">
@@ -28,10 +35,7 @@ export function ParticipantList() {
           >
             <span className="font-medium text-slate-700 dark:text-slate-300">{participant.name}</span>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                removeParticipant(participant.id);
-              }}
+              onClick={(e) => handleRemove(e, participant.id, participant.name)}
               className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
               title="Remover participante"
             >

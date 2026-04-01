@@ -12,10 +12,11 @@ const prisma = new PrismaClient();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Configuração segura de CORS (Aceita qualquer origem)
+// Configuração segura de CORS (Restrito ao Frontend oficial e localhost)
 app.use(cors({
-  origin: '*', // Permite qualquer site (incluindo Vercel, localhost, etc)
+  origin: [FRONTEND_URL, 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
 }));
 
 app.use(express.json());
@@ -291,10 +292,24 @@ const runEmergencySeed = async (): Promise<SeedResult> => {
   };
 };
 
+// Middleware de Autenticação
+const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    (req as any).user = user;
+    next();
+  });
+};
+
 // ==========================================
 // ROTA SECRETA DE EMERGÊNCIA (Apenas Injetar Dados)
 // ==========================================
-app.get('/api/reset-admin-secreto', async (req, res) => {
+app.get('/api/reset-admin-secreto', authenticateToken, async (req, res) => {
   try {
     const wait = String(req.query.wait ?? '').toLowerCase();
     const shouldWait = wait === '1' || wait === 'true';
@@ -352,7 +367,7 @@ app.get('/api/reset-admin-secreto', async (req, res) => {
   }
 });
 
-app.get('/api/reset-admin-status', (req, res) => {
+app.get('/api/reset-admin-status', authenticateToken, (req, res) => {
   res.status(200).json({
     versao: SEED_ENDPOINT_VERSION,
     status: seedJobStatus,
@@ -408,20 +423,6 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Erro no servidor durante o login' });
   }
 });
-
-// Middleware de Autenticação
-const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) return res.sendStatus(401);
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    (req as any).user = user;
-    next();
-  });
-};
 
 // Alterar Credenciais (Primeiro Login ou normal)
 app.put('/api/admin/update', authenticateToken, async (req, res) => {
@@ -496,7 +497,7 @@ app.post('/api/admin', authenticateToken, async (req, res) => {
 // ==========================================
 
 // Buscar usuários pelo nome (Autocomplete)
-app.get('/api/users/search', async (req, res) => {
+app.get('/api/users/search', authenticateToken, async (req, res) => {
   try {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
@@ -520,7 +521,7 @@ app.get('/api/users/search', async (req, res) => {
 });
 
 // Cadastrar um novo usuário manualmente
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', authenticateToken, async (req, res) => {
   try {
     const { name, matricula, email, telefone, endereco } = req.body;
 
@@ -545,7 +546,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // Listar participantes da gincana
-app.get('/api/participants', async (req, res) => {
+app.get('/api/participants', authenticateToken, async (req, res) => {
   try {
     const participants = await prisma.user.findMany({
       where: { isParticipant: true },
@@ -568,7 +569,7 @@ app.get('/api/participants', async (req, res) => {
 });
 
 // Adicionar usuário à gincana
-app.post('/api/participants/:id', async (req, res) => {
+app.post('/api/participants/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await prisma.user.update({
@@ -582,7 +583,7 @@ app.post('/api/participants/:id', async (req, res) => {
 });
 
 // Remover usuário da gincana
-app.delete('/api/participants/:id', async (req, res) => {
+app.delete('/api/participants/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await prisma.user.update({
@@ -601,9 +602,9 @@ app.delete('/api/participants/:id', async (req, res) => {
 // ==========================================
 
 // Buscar livro pelo tombo
-app.get('/api/books/:tombo', async (req, res) => {
+app.get('/api/books/:tombo', authenticateToken, async (req, res) => {
   try {
-    const { tombo } = req.params;
+    const tombo = String(req.params.tombo);
     const bookCopy = await prisma.bookCopy.findUnique({
       where: { tombo },
       include: { book: true },
@@ -625,7 +626,7 @@ app.get('/api/books/:tombo', async (req, res) => {
 });
 
 // Cadastrar novo livro (e sua cópia/tombo)
-app.post('/api/books', async (req, res) => {
+app.post('/api/books', authenticateToken, async (req, res) => {
   try {
     const { id: tombo, title, pages } = req.body;
 
@@ -655,9 +656,9 @@ app.post('/api/books', async (req, res) => {
 });
 
 // Atualizar páginas de um livro existente
-app.put('/api/books/:tombo/pages', async (req, res) => {
+app.put('/api/books/:tombo/pages', authenticateToken, async (req, res) => {
   try {
-    const { tombo } = req.params;
+    const tombo = String(req.params.tombo);
     const { pages } = req.body;
 
     const bookCopy = await prisma.bookCopy.findUnique({
@@ -689,7 +690,7 @@ app.put('/api/books/:tombo/pages', async (req, res) => {
 // ==========================================
 
 // Registrar leitura (pontuar)
-app.post('/api/readings', async (req, res) => {
+app.post('/api/readings', authenticateToken, async (req, res) => {
   try {
     const { userId, tombo } = req.body;
 

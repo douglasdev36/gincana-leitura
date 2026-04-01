@@ -3,6 +3,14 @@ import { Student, Book, Participant } from '../types';
 // Usa a variável de ambiente se existir, caso contrário, usa localhost como fallback seguro
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('@gincana:token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+};
+
 export const api = {
   // Auth - Login
   login: async (username: string, password: string) => {
@@ -74,7 +82,9 @@ export const api = {
   searchStudents: async (query: string): Promise<Student[]> => {
     if (!query) return [];
     try {
-      const response = await fetch(`${API_URL}/users/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`${API_URL}/users/search?q=${encodeURIComponent(query)}`, {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) throw new Error('Erro na busca');
       const data = await response.json();
       return data.map((u: any) => ({
@@ -92,7 +102,7 @@ export const api = {
     try {
       const response = await fetch(`${API_URL}/users`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(userData),
       });
       if (!response.ok) throw new Error('Erro ao criar usuário');
@@ -110,7 +120,9 @@ export const api = {
   // Busca lista de participantes da gincana
   getParticipants: async (): Promise<Participant[]> => {
     try {
-      const response = await fetch(`${API_URL}/participants`);
+      const response = await fetch(`${API_URL}/participants`, {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) throw new Error('Erro ao buscar participantes');
       const data = await response.json();
       
@@ -136,7 +148,10 @@ export const api = {
   // Adiciona um participante
   addParticipant: async (studentId: string): Promise<void> => {
     try {
-      await fetch(`${API_URL}/participants/${studentId}`, { method: 'POST' });
+      await fetch(`${API_URL}/participants/${studentId}`, { 
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       console.error('Erro ao adicionar participante:', error);
       throw error;
@@ -146,7 +161,10 @@ export const api = {
   // Remove um participante
   removeParticipant: async (studentId: string): Promise<void> => {
     try {
-      await fetch(`${API_URL}/participants/${studentId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/participants/${studentId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       console.error('Erro ao remover participante:', error);
       throw error;
@@ -156,7 +174,9 @@ export const api = {
   // Busca um livro pelo tombo (id)
   getBookByTombo: async (tombo: string): Promise<Book | null> => {
     try {
-      const response = await fetch(`${API_URL}/books/${tombo}`);
+      const response = await fetch(`${API_URL}/books/${tombo}`, {
+        headers: getAuthHeaders(),
+      });
       if (response.status === 404) return null;
       if (!response.ok) throw new Error('Erro ao buscar livro');
       return await response.json();
@@ -171,7 +191,7 @@ export const api = {
     try {
       const response = await fetch(`${API_URL}/books`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           id: book.id,
           title: book.title,
@@ -191,7 +211,7 @@ export const api = {
     try {
       const response = await fetch(`${API_URL}/books/${tombo}/pages`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ pages }),
       });
       if (!response.ok) throw new Error('Erro ao atualizar páginas');
@@ -207,7 +227,7 @@ export const api = {
     try {
       const response = await fetch(`${API_URL}/readings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ userId, tombo }),
       });
       if (!response.ok) throw new Error('Erro ao registrar leitura');

@@ -6,9 +6,22 @@ import { ReportModal } from './ReportModal';
 export function ScoreBoard() {
   const participants = useStore(state => state.participants);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [rankingType, setRankingType] = useState<'points' | 'books'>('points');
 
-  // Ordena os participantes pela pontuação de forma decrescente
-  const sortedParticipants = [...participants].sort((a, b) => b.score - a.score);
+  // Ordena os participantes pela pontuação ou quantidade de livros de forma decrescente
+  const sortedParticipants = [...participants].sort((a, b) => {
+    if (rankingType === 'points') {
+      return b.score - a.score;
+    } else {
+      const aBooks = a.history ? a.history.length : 0;
+      const bBooks = b.history ? b.history.length : 0;
+      // Se empatar na quantidade de livros, desempata pela pontuação
+      if (bBooks === aBooks) {
+        return b.score - a.score;
+      }
+      return bBooks - aBooks;
+    }
+  });
 
   if (sortedParticipants.length === 0) {
     return (
@@ -44,6 +57,30 @@ export function ScoreBoard() {
           </button>
         </div>
 
+        {/* Filtro de Tipo de Ranking */}
+        <div className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg mb-4">
+          <button
+            onClick={() => setRankingType('points')}
+            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              rankingType === 'points'
+                ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            Por Pontos
+          </button>
+          <button
+            onClick={() => setRankingType('books')}
+            className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              rankingType === 'books'
+                ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            Por Livros
+          </button>
+        </div>
+
         <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
           {sortedParticipants.map((participant, index) => (
             <div 
@@ -69,12 +106,25 @@ export function ScoreBoard() {
                 <span className="font-medium text-slate-800 dark:text-slate-200">{participant.name}</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded mb-1">
-                  {participant.score} pts
-                </span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {participant.history ? participant.history.length : 0} {participant.history?.length === 1 ? 'livro' : 'livros'}
-                </span>
+                {rankingType === 'points' ? (
+                  <>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded mb-1 transition-colors">
+                      {participant.score} pts
+                    </span>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors">
+                      {participant.history ? participant.history.length : 0} {participant.history?.length === 1 ? 'livro' : 'livros'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-bold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded mb-1 transition-colors">
+                      {participant.history ? participant.history.length : 0} {participant.history?.length === 1 ? 'livro' : 'livros'}
+                    </span>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors">
+                      {participant.score} pts
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           ))}
